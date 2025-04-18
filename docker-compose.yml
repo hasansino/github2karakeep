@@ -1,0 +1,14 @@
+services:
+  github2karakeep:
+    image: ghcr.io/hasansino/github2karakeep:latest
+    environment:
+      - TIMEOUT=10s
+      - GH_USERNAME=hasansino
+      - GH_TOKEN=${GH_TOKEN}
+      - GH_PER_PAGE=10
+      - KK_HOST=${KK_HOST}
+      - KK_TOKEN=${KK_TOKEN}
+      - KK_LIST=github2karakeep
+      - UPDATE_INTERVAL=1s
+      - EXPORT_LIMIT=10
+      - DEFAULT_TAG=github2karakeep
