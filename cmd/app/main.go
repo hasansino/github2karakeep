@@ -141,11 +141,23 @@ func run(
 	var counter int
 	for i := range allRepos {
 		repo := allRepos[i]
+		if repo.Repository.FullName == nil {
+			log.Printf("Repo id %v is invalid - missing full_name field.\n", repo.Repository.ID)
+			continue
+		}
+		if repo.Repository.HTMLURL == nil {
+			log.Printf("Repo id %v is invalid - missing html_url feild.\n", repo.Repository.ID)
+			continue
+		}
+		var repoDesc string
+		if repo.Repository.Description != nil {
+			repoDesc = *repo.Repository.Description
+		}
 		bookmark, err := kkService.CreateBookmark(
 			ctx,
 			*repo.Repository.FullName,
 			*repo.Repository.HTMLURL,
-			*repo.Repository.Description,
+			repoDesc,
 		)
 		if err != nil {
 			return fmt.Errorf("failed to create bookmark: %w", err)
