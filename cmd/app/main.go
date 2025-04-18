@@ -77,6 +77,12 @@ func Run(
 	defer wg.Done()
 	defer ticker.Stop()
 
+	// always run at start
+	err := run(ctx, exportLimit, ghService, ghUser, kkService, kkList)
+	if err != nil {
+		log.Printf("Failed to execute exporter: %s\n", err)
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
