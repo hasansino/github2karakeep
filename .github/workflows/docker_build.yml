@@ -4,16 +4,15 @@ on:
   workflow_dispatch:
     inputs:
       image_tag:
-        description: 'Tag'
+        description: 'tag'
         required: true
         default: ''
       latest_tag:
-        description: 'latest?'
+        description: 'latest'
         required: true
-        default: 'no'
-        options:
-          - yes
-          - no
+        default: false
+        type: boolean
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -48,4 +47,4 @@ jobs:
 
     - name: Set latest tag
       id: set_latest
-      run: echo "latest_tag=$([[ '${{ github.event.inputs.latest_tag }}' == 'yes' ]] && echo 'ghcr.io/${{ github.repository_owner }}/github2karakeep:latest' || echo '')" >> $GITHUB_ENV
+      run: echo "latest_tag=$([[ ${{ github.event.inputs.latest_tag }} == true ]] && echo 'ghcr.io/${{ github.repository_owner }}/github2karakeep:latest' || echo '')" >> $GITHUB_ENV
