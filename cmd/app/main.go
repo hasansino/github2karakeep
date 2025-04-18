@@ -22,6 +22,7 @@ const (
 	DefaultKarakeepListName = "github2karakeep"
 	DefaultUpdateInterval   = "24h"
 	DefaultExportLimit      = "10"
+	DefaultTagName          = "github2karakeep"
 )
 
 var wg sync.WaitGroup
@@ -45,13 +46,15 @@ func main() {
 		Envar("UPDATE_INTERVAL").Default(DefaultUpdateInterval).Duration()
 	exportLimit := kingpin.Flag("export-limit", "export limit").
 		Envar("EXPORT_LIMIT").Default(DefaultExportLimit).Int()
+	defaultTag := kingpin.Flag("default-tag", "default tag for bookmark").
+		Envar("DEFAULT_TAG").Default(DefaultTagName).String()
 
 	kingpin.Parse()
 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	ghService := github.New(*timeout, *ghToken, *ghPerPage)
-	kkService := karakeep.New(*timeout, *kkHost, *kkToken)
+	kkService := karakeep.New(*timeout, *kkHost, *kkToken, *defaultTag)
 
 	wg.Add(1)
 	go Run(ctx, *updateInterval, *exportLimit, ghService, *ghUser, kkService, *kkList)
@@ -74,13 +77,15 @@ func Run(
 	defer wg.Done()
 	defer ticker.Stop()
 
-	select {
-	case <-ctx.Done():
-		return
-	case <-ticker.C:
-		err := run(ctx, exportLimit, ghService, ghUser, kkService, kkList)
-		if err != nil {
-			log.Printf("Failed to execute exporter: %s\n", err)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			err := run(ctx, exportLimit, ghService, ghUser, kkService, kkList)
+			if err != nil {
+				log.Printf("Failed to execute exporter: %s\n", err)
+			}
 		}
 	}
 }
@@ -130,13 +135,22 @@ func run(
 	var counter int
 	for i := range allRepos {
 		repo := allRepos[i]
-		bookmark, err := kkService.CreateBookmark(ctx, *repo.Repository.Name, *repo.Repository.HTMLURL)
+		bookmark, err := kkService.CreateBookmark(
+			ctx,
+			*repo.Repository.FullName,
+			*repo.Repository.HTMLURL,
+			*repo.Repository.Description,
+		)
 		if err != nil {
 			return fmt.Errorf("failed to create bookmark: %w", err)
 		}
 		err = kkService.AddBookmarkToList(ctx, bookmark.ID, listID)
 		if err != nil {
 			return fmt.Errorf("failed to attach bookmark to list: %w", err)
+		}
+		err = kkService.AddTagsToBookmark(ctx, bookmark.ID, repo.Repository.Topics)
+		if err != nil {
+			return fmt.Errorf("failed to attach tags to bookmark: %w", err)
 		}
 		counter++
 		if counter == exportLimit {

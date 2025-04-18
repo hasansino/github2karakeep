@@ -17,15 +17,17 @@ type Service struct {
 	httpClient *http.Client
 	host       string
 	token      string
+	defTag     string
 }
 
-func New(timeout time.Duration, host string, token string) *Service {
+func New(timeout time.Duration, host string, token string, defTag string) *Service {
 	return &Service{
 		httpClient: &http.Client{
 			Timeout: timeout,
 		},
-		host:  strings.Trim(host, "/"),
-		token: token,
+		host:   strings.Trim(host, "/"),
+		token:  token,
+		defTag: defTag,
 	}
 }
 
@@ -90,13 +92,13 @@ func (s *Service) CreateList(ctx context.Context, name string) (*List, error) {
 	return response, nil
 }
 
-func (s *Service) CreateBookmark(ctx context.Context, title string, url string) (*Bookmark, error) {
+func (s *Service) CreateBookmark(ctx context.Context, title string, url string, desc string) (*Bookmark, error) {
 	payload := CreateBookmarkRequest{
-		Type:  "link",
-		Title: title,
-		URL:   url,
+		Type:    BookmarkTypeLink,
+		Title:   title,
+		URL:     url,
+		Summary: desc,
 	}
-
 	jsonBytes, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
@@ -130,6 +132,44 @@ func (s *Service) CreateBookmark(ctx context.Context, title string, url string) 
 func (s *Service) AddBookmarkToList(ctx context.Context, bookmarkID string, listID string) error {
 	reqUrl := fmt.Sprintf("%s/api/v1/lists/%s/bookmarks/%s", s.host, listID, bookmarkID)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, reqUrl, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Authorization", "Bearer "+s.token)
+
+	res, err := s.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func(b io.ReadCloser) {
+		_ = b.Close()
+	}(res.Body)
+
+	return nil
+}
+
+func (s *Service) AddTagsToBookmark(ctx context.Context, bookmarkID string, tags []string) error {
+	payload := AddTagsToBookmarkRequest{
+		Tags: make([]AddTagsToBookmarkRequestItem, 0),
+	}
+	if len(s.defTag) > 0 {
+		payload.Tags = append(payload.Tags, AddTagsToBookmarkRequestItem{s.defTag})
+	}
+	for i := range tags {
+		payload.Tags = append(payload.Tags, AddTagsToBookmarkRequestItem{tags[i]})
+	}
+	if len(payload.Tags) == 0 {
+		return nil
+	}
+	jsonBytes, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	reqUrl := fmt.Sprintf("%s/api/v1/bookmarks/%s/tags", s.host, bookmarkID)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqUrl, bytes.NewReader(jsonBytes))
 	if err != nil {
 		return err
 	}

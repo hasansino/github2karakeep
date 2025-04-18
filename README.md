@@ -17,6 +17,7 @@ docker run --rm \
   -e KK_LIST=github2karakeep \
   -e UPDATE_INTERVAL=24h \
   -e EXPORT_LIMIT=10 \
+  -e DEFAULT_TAG=github2karakeep \
   ghcr.io/hasansino/github2karakeep:latest
 ```
 
@@ -36,55 +37,26 @@ services:
       KK_LIST=github2karakeep
       UPDATE_INTERVAL=24h
       EXPORT_LIMIT=10
+      DEFAULT_TAG=github2karakeep
 ```
 
 ## Configuration
 
-cli arg | environment variable
+| CLI Argument        | Environment Variable | Description                                                    | Default Value     |
+|---------------------|----------------------|----------------------------------------------------------------|-------------------|
+| `--timeout`         | `TIMEOUT`            | Timeout for HTTP requests. Duration format: `2h45m30s`.        | `10s`             |
+| `--gh-user`         | `GH_USERNAME`        | GitHub username. **Required**.                                 |                   |
+| `--gh-token`        | `GH_TOKEN`           | GitHub token with starring/read-only permission. **Required**. |                   |
+| `--gh-per-page`     | `GH_PER_PAGE`        | Number of repositories to fetch per page.                      | `10`              |
+| `--kk-host`         | `KK_HOST`            | KaraKeep host, including schema. **Required**.                 |                   |
+| `--kk-token`        | `KK_TOKEN`           | KaraKeep API token. **Required**.                              |                   |
+| `--kk-list`         | `KK_LIST`            | KaraKeep list name.                                            | `github2karakeep` |
+| `--update-interval` | `UPDATE_INTERVAL`    | Update interval. Duration format: `2h45m30s`.                  | `24h`             |
+| `--export-limit`    | `EXPORT_LIMIT`       | Limit the number of repositories to export per run.            | `10`              |
+| `--default-tag`     | `DEFAULT_TAG`        | Default tag to add to every bookmark. Leave empty to omit.     | `github2karakeep` |
 
-### --timeout | TIMEOUT
+## Notes
 
-Timeout for HTTP requests.
-Duration format: "2h45m30s"
-Default 10s.
-
-### --gh-user | GH_USERNAME
-
-GitHub username.
-Required.
-
-### --gh-token | GH_TOKEN
-
-GitHub token. Token should have starring/read-only permission.
-Required.
-
-### --gh-per-page | GH_PER_PAGE
-
-How many repos to fetch per page.
-Default 10.
-
-### --kk-host | KK_HOST
-
-Karakeep host, including schema.
-Required.
-
-### --kk-token | KK_TOKEN
-
-Karakeep API token.
-Required.
-
-### --kk-list | KK_LIST
-
-Karakeep list name.
-Default "github2karakeep".
-
-### --update-interval | UPDATE_INTERVAL
-
-Update interval.
-Duration format: "2h45m30s"
-Default 24h.
-
-### --export-limit | EXPORT_LIMIT
-
-Limit how many repos to export per run.
-Default 10.
++ Ensure your GitHub token has the necessary permissions (starring/read-only).
++ KaraKeep host should include the schema (e.g., https://example.com).
++ Use the UPDATE_INTERVAL to control how often the export process runs.
