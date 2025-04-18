@@ -44,7 +44,3 @@ jobs:
         platforms: linux/amd64, linux/arm64
         push: true
         tags: ghcr.io/${{ github.repository_owner }}/github2karakeep:${{ github.event.inputs.image_tag }}
-
-    - name: Set latest tag
-      id: set_latest
-      run: echo "latest_tag=$([[ ${{ github.event.inputs.latest_tag }} == true ]] && echo 'ghcr.io/${{ github.repository_owner }}/github2karakeep:latest' || echo '')" >> $GITHUB_ENV
