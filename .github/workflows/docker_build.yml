@@ -7,11 +7,6 @@ on:
         description: 'tag'
         required: true
         default: ''
-      latest_tag:
-        description: 'latest'
-        required: true
-        default: false
-        type: boolean
 
 jobs:
   build:
