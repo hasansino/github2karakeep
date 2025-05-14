@@ -1,5 +1,16 @@
 package karakeep
 
+import "strings"
+
+type ErrorResponse struct {
+	Code  string `json:"code"`
+	Error string `json:"error"`
+}
+
+func (e *ErrorResponse) Contains(s string) bool {
+	return strings.Contains(e.Error, s)
+}
+
 type List struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`

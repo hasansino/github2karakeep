@@ -48,6 +48,10 @@ func (s *Service) GetAllLists(ctx context.Context) ([]List, error) {
 		_ = b.Close()
 	}(res.Body)
 
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("http error: %s", res.Status)
+	}
+
 	response := new(ListsResponse)
 	if err := json.NewDecoder(res.Body).Decode(response); err != nil {
 		return nil, err
@@ -83,6 +87,10 @@ func (s *Service) CreateList(ctx context.Context, name string) (*List, error) {
 	defer func(b io.ReadCloser) {
 		_ = b.Close()
 	}(res.Body)
+
+	if res.StatusCode != http.StatusCreated {
+		return nil, fmt.Errorf("http error: %s", res.Status)
+	}
 
 	response := new(List)
 	if err := json.NewDecoder(res.Body).Decode(response); err != nil {
@@ -121,6 +129,10 @@ func (s *Service) CreateBookmark(ctx context.Context, title string, url string, 
 		_ = b.Close()
 	}(res.Body)
 
+	if res.StatusCode != http.StatusCreated {
+		return nil, fmt.Errorf("http error: %s", res.Status)
+	}
+
 	response := new(Bookmark)
 	if err := json.NewDecoder(res.Body).Decode(response); err != nil {
 		return nil, err
@@ -146,6 +158,18 @@ func (s *Service) AddBookmarkToList(ctx context.Context, bookmarkID string, list
 	defer func(b io.ReadCloser) {
 		_ = b.Close()
 	}(res.Body)
+
+	// should be idempotent instead
+	// @see https://github.com/karakeep-app/karakeep/issues/1402
+	if res.StatusCode != http.StatusNoContent {
+		errorResp := new(ErrorResponse)
+		if err := json.NewDecoder(res.Body).Decode(errorResp); err != nil {
+			return err
+		}
+		if !errorResp.Contains("already in the list") {
+			return fmt.Errorf("http error: %s", res.Status)
+		}
+	}
 
 	return nil
 }
@@ -184,6 +208,10 @@ func (s *Service) AddTagsToBookmark(ctx context.Context, bookmarkID string, tags
 	defer func(b io.ReadCloser) {
 		_ = b.Close()
 	}(res.Body)
+
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("http error: %s", res.Status)
+	}
 
 	return nil
 }

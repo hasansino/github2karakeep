@@ -17,12 +17,13 @@ import (
 )
 
 const (
-	DefaultRepoPerPage      = "10"
+	DefaultReposPerPage     = "100"
 	RequestTimeout          = "10s"
 	DefaultKarakeepListName = "github2karakeep"
 	DefaultUpdateInterval   = "24h"
 	DefaultExportLimit      = "10"
 	DefaultTagName          = "github2karakeep"
+	DefaultExtractTopics    = "false"
 )
 
 var wg sync.WaitGroup
@@ -35,7 +36,9 @@ func main() {
 	ghToken := kingpin.Flag("gh-token", "github personal access token").
 		Envar("GH_TOKEN").Required().String()
 	ghPerPage := kingpin.Flag("gh-per-page", "number of repos per page").
-		Envar("GH_PER_PAGE").Default(DefaultRepoPerPage).Int()
+		Envar("GH_PER_PAGE").Default(DefaultReposPerPage).Int()
+	ghExtractTopics := kingpin.Flag("gh-extract-topics", "extract topics from repo description as tags").
+		Envar("GH_EXTRACT_TOPICS").Default(DefaultExtractTopics).Bool()
 	kkHost := kingpin.Flag("kk-host", "karakeep host").
 		Envar("KK_HOST").Required().String()
 	kkToken := kingpin.Flag("kk-token", "karakeep token").
@@ -57,7 +60,7 @@ func main() {
 	kkService := karakeep.New(*timeout, *kkHost, *kkToken, *defaultTag)
 
 	wg.Add(1)
-	go Run(ctx, *updateInterval, *exportLimit, ghService, *ghUser, kkService, *kkList)
+	go Run(ctx, *updateInterval, *exportLimit, ghService, *ghUser, kkService, *kkList, *ghExtractTopics)
 
 	sys := make(chan os.Signal, 1)
 	signal.Notify(sys, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
@@ -72,13 +75,14 @@ func Run(
 	ghUser string,
 	kkService *karakeep.Service,
 	kkList string,
+	ghExtractTopics bool,
 ) {
 	ticker := time.NewTicker(updateInterval)
 	defer wg.Done()
 	defer ticker.Stop()
 
 	// always run at start
-	err := run(ctx, exportLimit, ghService, ghUser, kkService, kkList)
+	err := run(ctx, exportLimit, ghService, ghUser, kkService, kkList, ghExtractTopics)
 	if err != nil {
 		log.Printf("Failed to execute exporter: %s\n", err)
 	}
@@ -88,7 +92,7 @@ func Run(
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			err := run(ctx, exportLimit, ghService, ghUser, kkService, kkList)
+			err := run(ctx, exportLimit, ghService, ghUser, kkService, kkList, ghExtractTopics)
 			if err != nil {
 				log.Printf("Failed to execute exporter: %s\n", err)
 			}
@@ -103,11 +107,15 @@ func run(
 	ghUser string,
 	kkService *karakeep.Service,
 	kkList string,
+	ghExtractTopics bool,
 ) error {
 
 	log.Printf("Starting exporter...")
 
 	// --- Retrieve starred repos ---
+
+	log.Printf("Retrieving starred repos...")
+
 	allRepos, err := ghService.GetStarredRepos(ctx, ghUser)
 	if err != nil {
 		return fmt.Errorf("failed to retrieve starred repos: %w", err)
@@ -126,10 +134,13 @@ func run(
 	for _, list := range lists {
 		if list.Name == kkList {
 			listID = list.ID
+			log.Printf("Found karakeep list %s with id %s\n", kkList, listID)
 			break
 		}
 	}
+
 	if len(listID) == 0 {
+		log.Printf("Karakeep list %s not found. Creating...\n", kkList)
 		list, err := kkService.CreateList(ctx, kkList)
 		if err != nil {
 			return fmt.Errorf("failed to create list: %w", err)
@@ -138,6 +149,9 @@ func run(
 	}
 
 	// --- Create / Update bookmarks ---
+
+	log.Printf("Creating bookmarks...")
+
 	var counter int
 	for i := range allRepos {
 		repo := allRepos[i]
@@ -166,12 +180,24 @@ func run(
 		if err != nil {
 			return fmt.Errorf("failed to attach bookmark to list: %w", err)
 		}
-		err = kkService.AddTagsToBookmark(ctx, bookmark.ID, repo.Repository.Topics)
+
+		var ghTopics []string
+		if ghExtractTopics {
+			ghTopics = repo.Repository.Topics
+		}
+
+		err = kkService.AddTagsToBookmark(ctx, bookmark.ID, ghTopics)
 		if err != nil {
 			return fmt.Errorf("failed to attach tags to bookmark: %w", err)
 		}
+
 		counter++
-		if counter == exportLimit {
+
+		if counter%100 == 0 {
+			log.Printf("Processed %d bookmarks.\n", counter)
+		}
+
+		if exportLimit > 0 && counter == exportLimit {
 			break
 		}
 	}

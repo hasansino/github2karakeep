@@ -3,10 +3,11 @@ package github
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
-	"github.com/google/go-github/v71/github"
+	"github.com/google/go-github/v72/github"
 )
 
 type Service struct {
@@ -32,19 +33,24 @@ func (s *Service) GetStarredRepos(ctx context.Context, user string) ([]*github.S
 
 	allRepos := make([]*github.StarredRepository, 0)
 
-	reqCtx, cancel := context.WithTimeout(ctx, s.timeout)
-	defer cancel()
-
+	var page int
 	for {
+		reqCtx, cancel := context.WithTimeout(ctx, s.timeout)
 		repos, resp, err := s.ghClient.Activity.ListStarred(reqCtx, user, opt)
+		cancel()
 		if err != nil {
 			return nil, fmt.Errorf("failed to retrieve starred: %w", err)
 		}
+
+		log.Printf("Retrieved page %d with %d repos\n", page, len(repos))
+
 		allRepos = append(allRepos, repos...)
 		if resp.NextPage == 0 {
 			break
 		}
 		opt.Page = resp.NextPage
+
+		page++
 	}
 
 	return allRepos, nil
