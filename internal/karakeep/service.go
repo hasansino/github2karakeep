@@ -129,7 +129,7 @@ func (s *Service) CreateBookmark(ctx context.Context, title string, url string, 
 		_ = b.Close()
 	}(res.Body)
 
-	if res.StatusCode != http.StatusCreated {
+	if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusCreated {
 		return nil, fmt.Errorf("http error: %s", res.Status)
 	}
 
@@ -159,8 +159,6 @@ func (s *Service) AddBookmarkToList(ctx context.Context, bookmarkID string, list
 		_ = b.Close()
 	}(res.Body)
 
-	// should be idempotent instead
-	// @see https://github.com/karakeep-app/karakeep/issues/1402
 	if res.StatusCode != http.StatusNoContent {
 		errorResp := new(ErrorResponse)
 		if err := json.NewDecoder(res.Body).Decode(errorResp); err != nil {
