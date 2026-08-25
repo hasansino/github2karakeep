@@ -106,6 +106,7 @@ func (s *Service) CreateBookmark(ctx context.Context, title string, url string, 
 		Title:   title,
 		URL:     url,
 		Summary: desc,
+		Source:  "import",
 	}
 	jsonBytes, err := json.Marshal(payload)
 	if err != nil {

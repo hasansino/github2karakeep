@@ -36,6 +36,7 @@ type CreateBookmarkRequest struct {
 	URL     string `json:"url"`
 	Title   string `json:"title"`
 	Summary string `json:"summary"`
+	Source  string `json:"source,omitempty"`
 }
 
 type AddBookmarkToListRequest struct {
