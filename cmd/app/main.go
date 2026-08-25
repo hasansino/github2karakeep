@@ -9,6 +9,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	"uuid"
 
 	"github.com/alecthomas/kingpin/v2"
 
@@ -112,6 +113,10 @@ func run(
 
 	log.Printf("Starting exporter...")
 
+	sessionID := uuid.New().String()
+
+	log.Printf("Session ID: %s", sessionID)
+
 	// --- Retrieve starred repos ---
 
 	log.Printf("Retrieving starred repos...")
@@ -169,6 +174,7 @@ func run(
 		}
 		bookmark, err := kkService.CreateBookmark(
 			ctx,
+			sessionID,
 			*repo.Repository.FullName,
 			*repo.Repository.HTMLURL,
 			repoDesc,

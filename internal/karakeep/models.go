@@ -31,12 +31,15 @@ type Bookmark struct {
 
 const BookmarkTypeLink = "link"
 
+const BookmarkSourceImport = "import"
+
 type CreateBookmarkRequest struct {
-	Type    string `json:"type"`
-	URL     string `json:"url"`
-	Title   string `json:"title"`
-	Summary string `json:"summary"`
-	Source  string `json:"source,omitempty"`
+	Type     string `json:"type"`
+	URL      string `json:"url"`
+	Title    string `json:"title"`
+	Summary  string `json:"summary"`
+	Source   string `json:"source,omitempty"`
+	ImportID string `json:"importSessionId,omitempty"`
 }
 
 type AddBookmarkToListRequest struct {

@@ -100,13 +100,16 @@ func (s *Service) CreateList(ctx context.Context, name string) (*List, error) {
 	return response, nil
 }
 
-func (s *Service) CreateBookmark(ctx context.Context, title string, url string, desc string) (*Bookmark, error) {
+func (s *Service) CreateBookmark(
+	ctx context.Context, sessionID string, title string, url string, desc string,
+) (*Bookmark, error) {
 	payload := CreateBookmarkRequest{
-		Type:    BookmarkTypeLink,
-		Title:   title,
-		URL:     url,
-		Summary: desc,
-		Source:  "import",
+		Type:     BookmarkTypeLink,
+		Title:    title,
+		URL:      url,
+		Summary:  desc,
+		Source:   BookmarkSourceImport,
+		ImportID: sessionID,
 	}
 	jsonBytes, err := json.Marshal(payload)
 	if err != nil {
