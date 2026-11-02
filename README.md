@@ -66,6 +66,7 @@ services:
 + GitHub API rate limits may apply. 
 + Increase GH_PER_PAGE to lower number of requests if you have a large number of starred repositories. 
 + GitHub API allows up to 100 repositories per page.
-+ EXPORT_LIMIT meant to be used for tests (exporting a small number of repositories). 
-+ EXPORT_LIMIT does not persist state between runs. 
-+ Set EXPORT_LIMIT to 0 to disable limit.
++ `EXPORT_LIMIT` defaults to `10` and is intended for testing. Each run starts
+  from the beginning, so later runs do not continue with the remaining repositories.
++ A warning is logged when the limit leaves repositories unprocessed. Set
+  `EXPORT_LIMIT=0` to disable the limit and export all starred repositories.

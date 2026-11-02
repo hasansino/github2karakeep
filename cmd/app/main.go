@@ -204,6 +204,9 @@ func run(
 		}
 
 		if exportLimit > 0 && counter == exportLimit {
+			if i+1 < len(allRepos) {
+				log.Printf("WARNING: Export limit %d reached; unprocessed repositories: %d. Each run starts from the beginning. Set EXPORT_LIMIT=0 to export all repositories.\n", exportLimit, len(allRepos)-i-1)
+			}
 			break
 		}
 	}
